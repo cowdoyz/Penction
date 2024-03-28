@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="org.pension.mybatis.mapper.res">
+	<select id="moveRES" parameterType="String" resultType="org.pension.dto.resvationDTO">
+		select * 
+		from pension_room_table proom, pension_reservation_table pres
+		where proom.room_number = pres.room_number
+		and pres.reservation_date = #{reservation_date}
+	</select>
+<!-- #{reservation_days, mode=IN} 이런식으로 작성했는데 gpt는 jdbcType 까지 명시시켰다.-->	
+<!-- <update id="res_pay_update" parameterType="org.pension.vo.reservationVO"  statementType="CALLABLE">
+        {CALL RES_PAY_UPDATE(
+            #{reservation_days, mode=IN, jdbcType=NUMERIC},
+            #{rid, mode=IN, jdbcType=VARCHAR},
+            #{reservation_request, mode=IN, jdbcType=VARCHAR},
+            #{reservation_pay, mode=IN, jdbcType=NUMERIC},
+            #{reservation_person, mode=IN, jdbcType=NUMERIC},
+            #{reservation_date, mode=IN, jdbcType=DATE},
+            #{room_number, mode=IN, jdbcType=NUMERIC})}
+</update> -->	
+	<update id="res_pay_update" parameterType="org.pension.vo.reservationVO">
+        UPDATE pension_reservation_table
+        SET reservation_days = #{reservation_days},
+            reservation_state = '예약대기',
+            rid = #{rid},
+            reservation_request = #{reservation_request},
+            reservation_person = #{reservation_person},
+            reservation_pay = #{reservation_pay}
+        WHERE reservation_date = #{reservation_date}
+            AND room_number = #{room_number}
+    </update>
+    
+    <select id="resView" parameterType="String" resultType="org.pension.dto.resvationDTO">
+    	select * 
+    	from pension_room_table proom, pension_reservation_table pres 
+    	where proom.room_number = pres.room_number and pres.rid = '${rid}'
+    </select>
+    
+    <select id="admin_view"  resultType="org.pension.dto.adminInfoDTO">
+    	SELECT *
+		FROM pension_room_table proom
+		JOIN pension_reservation_table pres ON proom.room_number = pres.room_number
+		JOIN pension_member_table pmt ON pres.rid = pmt.id
+		WHERE pres.reservation_state = '예약대기'
+		OR pres.reservation_state = '예약완료'
+    </select>
+    
+    <update id="cancel_req" parameterType="int">
+    	UPDATE pension_reservation_table
+        SET reservation_request = '예약 취소요청'
+        WHERE reservation_number = #{res_num}
+    </update>
+    
+    <update id="enter_res" parameterType="int">
+    	UPDATE pension_reservation_table
+        SET reservation_state = '예약완료'
+        WHERE reservation_number = #{res_num}
+    </update>
+    
+    <update id="res_cancel" parameterType="int">
+    	UPDATE pension_reservation_table
+        SET reservation_state = '예약가능',
+            reservation_request = null,
+            rid = null,
+            reservation_pay = null,
+            reservation_person = null,
+            reservation_days = null
+       WHERE reservation_number = #{res_num}
+    </update>
+    
+</mapper>
+
